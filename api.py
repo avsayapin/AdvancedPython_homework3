@@ -1,13 +1,11 @@
 from flask import Flask, request, jsonify
 from models import Models
+import pandas as pd
 import json
 
-import pandas as pd
+models = Models()
 
 app = Flask(__name__)
-
-
-models = Models()
 
 
 @app.route('/')
@@ -18,8 +16,7 @@ def hello_world():
 @app.route('/classes', methods=["GET"])
 def get_classes():
     """
-
-    :return:
+    :return: json with the list of model classes supported in this API
     """
     return jsonify(classes=list(models.classes.keys())), 200
 
@@ -27,9 +24,9 @@ def get_classes():
 @app.route('/models', methods=["GET"])
 def get_models():
     """
-    Используя функцию get_models_list класса Models полуаем список моделей
-    i[:-7] удаляет '.pickle' из имен моделей
-    :return: json со списком доступных моделей
+    We use function get_models_list() of Models class instance to get the list of available models
+    Names of the models shown with removed extension(.pickle)
+    :return: json with the list of available models
     """
     return jsonify(models=[i[:-7] for i in models.get_models_list()]), 200
 
@@ -37,55 +34,67 @@ def get_models():
 @app.route('/create_model', methods=["GET"])
 def create_model():
     """
-
-    :return: сообщение о том, что модель была создана
+    Function creates new model with specified name,class and hyperparameters from request
+    :return: message that model was created
     """
     name = request.args.get("name")
     class_name = request.args.get("class")
     params = request.args.get("params")
-    params = json.loads(params)
-    name = models.create(class_name, name, params)
-    return f"Model {name} has been created", 200
+    if params:
+        params = json.loads(params)
+    try:
+        name = models.create(class_name, name, params)
+        return f"Model {name} has been created", 200
+    except KeyError as error:
+        return str(error), 500
 
 
 @app.route('/delete', methods=['GET'])
 def delete():
     """
-
-    :return:
+    Function deletes model with the given name
+    :return: message that model has been deleted
     """
     name = request.args.get("name")
     models.delete_model(name)
     return f"Model {name} has been deleted", 200
 
 
-@app.route('/train', methods=['POST'])
+@app.route('/train', methods=['GET'])
 def train():
     """
-
-
-    :return: Message that training has benn successful
+    Function gets name of the model and training data from request and trains the model
+    :return: Message that training was successful
     """
     data = request.get_json()
     name = request.args.get("name")
     data = pd.DataFrame.from_dict(data)
-    models.train(name, data)
+    try:
+        models.train(name, data)
+    except AttributeError as error:
+        return str(error), 500
+    except KeyError as error:
+        return str(error), 500
     return "Training successful", 200
 
 
 @app.route('/predict', methods=['GET'])
 def predict():
     """
-
-    :return:
+    Function gets data and model name from request,
+    then loads model and uses it for predictions
+    :return: predictions of the model in float type
     """
     data = request.get_json()
     model_name = request.args.get("name")
     data = pd.DataFrame.from_dict(data)
     model = models.get(model_name)
-    predictions = model.predict(data)
+    try:
+        predictions = model.predict(data)
+    except AttributeError:
+        return str(AttributeError("Model with the given name doesn't exist")), 500
     return jsonify(Predictions=list(map(float, predictions))), 200
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')
