@@ -5,7 +5,6 @@ services:
       context: ./app
       dockerfile: Dockerfile
     container_name: flask
-    image: spielmeister/advancedpythonhw2api:latest
     restart: always
     links:
       - mongo
@@ -24,7 +23,6 @@ services:
       context: ./worker
       dockerfile: Dockerfile
     container_name: worker
-    image: spielmeister/advancedpythonhw2worker:latest
     depends_on:
       - redis
   redis:
