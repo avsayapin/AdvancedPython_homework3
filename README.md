@@ -15,9 +15,9 @@ args={name:name,class_name:class_name,params:params}
 
 creates new model with specified arguments, "class name" arg is mandatory, params should be a string dictionary with hyperparameters of the chosen sklearn model class
 Example:
-'''
+```
 params='{"learning_rate": 0.01,...}'
-'''
+```
 
 **/delete**
 
