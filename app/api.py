@@ -1,11 +1,18 @@
 from flask import Flask, request, jsonify
-from models import Models
-import pandas as pd
-import json
+from celery import Celery
+from pymongo import MongoClient
+import os
 
-models = Models()
+CELERY_BROKER = os.environ["CELERY_BROKER"]
+CELERY_BACKEND = os.environ["CELERY_BACKEND"]
+celery = Celery("tasks", broker=CELERY_BROKER, backend=CELERY_BACKEND)
+
 
 app = Flask(__name__)
+
+client = MongoClient("mongodb", 27017)
+db = client["database"]
+collection = db['model_collection']
 
 
 @app.route('/')
@@ -18,7 +25,12 @@ def get_classes():
     """
     :return: json with the list of model classes supported in this API
     """
-    return jsonify(classes=list(models.classes.keys())), 200
+    task = celery.send_task("classes")
+    res = celery.AsyncResult(task.id)
+    while True:
+        if res.state == "SUCCESS":
+            break
+    return jsonify(res.get()), 200
 
 
 @app.route('/models', methods=["GET"])
@@ -28,7 +40,12 @@ def get_models():
     Names of the models shown with removed extension(.pickle)
     :return: json with the list of available models
     """
-    return jsonify(models=[i[:-7] for i in models.get_models_list()]), 200
+    task = celery.send_task("models")
+    res = celery.AsyncResult(task.id)
+    while True:
+        if res.state == "SUCCESS":
+            break
+    return jsonify(res.get()), 200
 
 
 @app.route('/create_model', methods=["GET"])
@@ -40,13 +57,8 @@ def create_model():
     name = request.args.get("name")
     class_name = request.args.get("class")
     params = request.args.get("params")
-    if params:
-        params = json.loads(params)
-    try:
-        name = models.create(class_name, name, params)
-        return f"Model {name} has been created", 200
-    except KeyError as error:
-        return str(error), 500
+    task = celery.send_task("create", args=[name, class_name, params])
+    return task.id, 200
 
 
 @app.route('/delete', methods=['GET'])
@@ -56,8 +68,8 @@ def delete():
     :return: message that model has been deleted
     """
     name = request.args.get("name")
-    models.delete_model(name)
-    return f"Model {name} has been deleted", 200
+    task = celery.send_task("delete", args=[name])
+    return task.id, 200
 
 
 @app.route('/train', methods=['GET'])
@@ -68,14 +80,8 @@ def train():
     """
     data = request.get_json()
     name = request.args.get("name")
-    data = pd.DataFrame.from_dict(data)
-    try:
-        models.train(name, data)
-    except AttributeError as error:
-        return str(error), 500
-    except KeyError as error:
-        return str(error), 500
-    return "Training successful", 200
+    task = celery.send_task("train", args=[data, name])
+    return task.id, 200
 
 
 @app.route('/predict', methods=['GET'])
@@ -86,15 +92,24 @@ def predict():
     :return: predictions of the model in float type
     """
     data = request.get_json()
-    model_name = request.args.get("name")
-    data = pd.DataFrame.from_dict(data)
-    model = models.get(model_name)
-    try:
-        predictions = model.predict(data)
-    except AttributeError:
-        return str(AttributeError("Model with the given name doesn't exist")), 500
-    return jsonify(Predictions=list(map(float, predictions))), 200
+    name = request.args.get("name")
+    task = celery.send_task("predict", args=[data, name])
+    return task.id, 200
+
+
+@app.route('/results', methods=['GET'])
+def results():
+    """
+    Function returns results of a tak by given task_id
+    :return: results of a task, or it's state
+    """
+    task_id = request.args.get("task_id")
+    res = celery.AsyncResult(task_id)
+    if res.state == "SUCCESS":
+        return jsonify(res.get()), 200
+    else:
+        return str(res.state), 200
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port=5000)
