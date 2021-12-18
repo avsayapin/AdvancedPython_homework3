@@ -19,8 +19,19 @@ client = MongoClient("mongodb", 27017)
 db = client["database"]
 collection = db['model_collection']
 
-logging.basicConfig(filename="/logs/worker.log", level=logging.DEBUG,
-                    format="%(asctime)s:%(levelname)s:%(message)s")
+logger = logging.getLogger("worker")
+logger.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter("%(asctime)s:%(levelname)s:%(message)s")
+
+file_handler = logging.FileHandler("/logs/worker.log")
+file_handler.setFormatter(formatter)
+
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
+logger.addHandler(stream_handler)
 
 
 @celery.task(name="classes")
@@ -31,6 +42,7 @@ def classes():
     """
 
     models_dict = Models()
+    logger.debug("Getting available classes")
     return {"classes": list(models_dict.classes.keys())}
 
 
@@ -40,6 +52,7 @@ def models():
     Returns models stored in database
     :return: dict with available models in database
     """
+    logger.debug("Getting available models")
     return {model["name"]: {"class": model["class"], "Trained": model["trained"]} for model in collection.find({})}
 
 
@@ -50,13 +63,14 @@ def delete(name):
     :param name: name of the model to delete
     :return: dict with available models in database
     """
+    logger.debug(f"Deleting model named{name}")
     try:
         query = collection.find_one({"name": name})
         collection.delete_one({'_id': ObjectId(query["_id"])})
+        logger.debug(f"Model {name} has been deleted")
         return {model["name"]: {"class": model["class"], "Trained": model["trained"]} for model in collection.find({})}
     except TypeError:
-        logging.error("Model with this name doesn't exist")
-        raise TypeError("Model with this name doesn't exist")
+        logger.exception("Model with this name doesn't exist")
 
 
 @celery.task(name="create")
@@ -68,22 +82,24 @@ def create(name, class_name, params):
     :param params: hyperparameters of the model
     :return: message that model has been created
     """
+    logger.debug(f"Creating model with name:{name}, class: {class_name}, params: {params}")
     models_dict = Models()
     if params:
         params = json.loads(params)
         try:
             model = models_dict.classes[class_name](**params)
         except KeyError:
-            logging.error("Wrong class")
-            raise KeyError("Wrong class")
+            logger.exception("Wrong class for model creation")
+            raise KeyError("Wrong class for model creation")
     else:
         try:
             model = models_dict.classes[class_name]()
         except KeyError:
-            logging.error("Wrong class")
-            raise KeyError("Wrong class")
+            logger.exception("Wrong class for model creation")
+            raise KeyError("Wrong class for model creation")
     model = pickle.dumps(model)
     collection.insert_one({"name": name, "class": class_name, "trained": False, "model": Binary(model)})
+    logger.debug(f"model named {name} has been created")
     return f"Model {name} has been created"
 
 
@@ -96,23 +112,22 @@ def train(data, name):
     :return: message that model has been train
     """
     data = pd.DataFrame.from_dict(data)
+    logger.debug(f"Training model with name:{name}, data: {data.dtypes}")
     model = collection.find_one({"name": name})
     try:
-        with mlflow.start_run():
-            model = pickle.loads(model["model"])
-            x = data.drop(columns="target")
-            y = data["target"]
-            model.fit(x, y)
-            mlflow.sklearn.log_model(model, "model", registered_model_name=name)
-            model = pickle.dumps(model)
-            collection.update_one({"name": name}, {"$set": {"trained": True,
-                                                            "model": Binary(model)}})
+        model = pickle.loads(model["model"])
+        x = data.drop(columns="target")
+        y = data["target"]
+        model.fit(x, y)
+        model = pickle.dumps(model)
+        collection.update_one({"name": name}, {"$set": {"trained": True,
+                                                        "model": Binary(model)}})
         return "Training successful", 200
     except AttributeError:
-        logging.error("Model with the given name doesn't exist")
+        logger.exception("Model with the given name doesn't exist")
         raise AttributeError("Model with the given name doesn't exist")
     except KeyError:
-        logging.error("No 'target' column in data")
+        logger.exception("No 'target' column in data")
         raise KeyError("No 'target' column in data")
 
 
@@ -127,9 +142,9 @@ def predict(data, name):
     data = pd.DataFrame.from_dict(data)
     model = collection.find_one({"name": name})["model"]
     model = pickle.loads(model)
+    logger.debug(f"Predicting with parameters: Name:{name}, data {data.dtypes}")
     try:
         predictions = model.predict(data)
         return {"predictions": predictions.tolist()}
     except AttributeError:
-        logging.error("Model with the given name doesn't exist")
-        raise AttributeError("Model with the given name doesn't exist")
+        logger.exception("Model with the given name doesn't exist")

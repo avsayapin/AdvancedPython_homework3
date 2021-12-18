@@ -1,13 +1,26 @@
 Repository for the third homework of the Advanced Python course
+
+Information about API from previous homework can be found in "API information" section. 
+Changes made to API reflected in the beginning of it.
 # HW3 Tasks
 ____
 <details><summary>1. Logging and monitoring</summary>
 <p>
 
 Logging was added via 'logging' library from base python. 
-Logs are saved to app.log file on the volume named 'advancedpython_homework3_logs'
-Prometheus from dockerhub image 'prom/prometheus' has been added for monitoring
-It can be accessed from standard address 'localhost/9090'
+
+Logs are saved to app.log and worker.log files on the volume named "advancedpython_homework3_logs".
+
+You can set logs level by changing logger.setlevel() in app/api.py and worker/tasks.py.
+
+Prometheus from dockerhub image 'prom/prometheus' has been added for monitoring.
+
+It can be accessed from standard address 'localhost:9090', metrics can be seen at 'localhost:5000/metrics'.
+
+Added counters by model for training and prediction requests, counter by class for create_model request 
+and counter by status code for results request.
+
+Histogram type metrics added for classes and metrics requests.
 </p>
 </details>
 <details><summary>2. MLFlow</summary>
@@ -31,9 +44,11 @@ It can be accessed from standard address 'localhost/9090'
 </p>
 </details>
 
-___
 # API information
 ___
+Changes from the previous homework:
+
+
 API can do the following requests:
 
 **/classes**
