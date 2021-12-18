@@ -1,14 +1,24 @@
 from flask import Flask, request, jsonify
+from prometheus_flask_exporter import PrometheusMetrics
 from celery import Celery
 from pymongo import MongoClient
 import os
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename="/logs/app.log", level=logging.DEBUG,
+                    format="%(asctime)s:%(levelname)s:%(message)s")
+
+logger.info("Starting APi")
 
 CELERY_BROKER = os.environ["CELERY_BROKER"]
 CELERY_BACKEND = os.environ["CELERY_BACKEND"]
-celery = Celery("tasks", broker=CELERY_BROKER, backend=CELERY_BACKEND)
+celery = Celery("tasks", broker=CELERY_BROKER, backend=CELERY_BACKEND, task_eager_propagates=True)
 
 
 app = Flask(__name__)
+metrics = PrometheusMetrics(app)
+metrics.info('app_info', 'Application info')
 
 client = MongoClient("mongodb", 27017)
 db = client["database"]
@@ -21,6 +31,8 @@ def hello_world():
 
 
 @app.route('/classes', methods=["GET"])
+@metrics.counter("Cnt_hello_world", "Count something",
+                 labels={'status': lambda r: r.status_code})
 def get_classes():
     """
     :return: json with the list of model classes supported in this API
@@ -107,6 +119,8 @@ def results():
     res = celery.AsyncResult(task_id)
     if res.state == "SUCCESS":
         return jsonify(res.get()), 200
+    elif res.state == "FAILURE":
+        return str(res.traceback), 500
     else:
         return str(res.state), 200
 

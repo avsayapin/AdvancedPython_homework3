@@ -6,6 +6,8 @@ services:
       dockerfile: Dockerfile
     container_name: flask
     restart: always
+    volumes:
+      - logs:/logs
     links:
       - mongo
     ports:
@@ -23,7 +25,18 @@ services:
       context: ./worker
       dockerfile: Dockerfile
     container_name: worker
+    volumes:
+      - logs:/logs
     depends_on:
       - redis
   redis:
     image: redis
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+volumes:
+  logs:
+

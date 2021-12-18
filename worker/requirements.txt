@@ -4,3 +4,4 @@ celery~=5.2.1
 pymongo~=4.0.1
 scikit-learn~=1.0.1
 redis
+mlflow==1.22.0

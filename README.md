@@ -1,4 +1,39 @@
-Repository for the first homework of the Advanced Python course
+Repository for the third homework of the Advanced Python course
+# HW3 Tasks
+____
+<details><summary>1. Logging and monitoring</summary>
+<p>
+
+Logging was added via 'logging' library from base python. 
+Logs are saved to app.log file on the volume named 'advancedpython_homework3_logs'
+Prometheus from dockerhub image 'prom/prometheus' has been added for monitoring
+It can be accessed from standard address 'localhost/9090'
+</p>
+</details>
+<details><summary>2. MLFlow</summary>
+<p>
+
+</p>
+</details>
+<details><summary>3. CI</summary>
+<p>
+
+</p>
+</details>
+<details><summary>4. Telegram app</summary>
+<p>
+
+</p>
+</details>
+<details><summary>5. Extra celery email task</summary>
+<p>
+
+</p>
+</details>
+
+___
+# API information
+___
 API can do the following requests:
 
 **/classes**
