@@ -25,10 +25,10 @@ scripts:
 after_success:
   - docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
   - docker images
-  - docker tag flask:latest spielmeister/advancedpython_hw3_api:new
-  - docker tag worker:latest spielmeister/advancedpythonhw3_worker:new
-  - docker push spielmeister/advancedpython_hw3_api:tagname
-  - docker push spielmeister/advancedpythonhw3_worker:tagname
+  - docker tag flask:latest $DOCKER_USERNAME/advancedpython_hw3_api:new
+  - docker tag worker:latest $DOCKER_USERNAME/advancedpythonhw3_worker:new
+  - docker push $DOCKER_USERNAME/advancedpython_hw3_api:tagname
+  - docker push $DOCKER_USERNAME/advancedpythonhw3_worker:tagname
 
 branches:
   only:
