@@ -7,3 +7,5 @@ scikit-learn~=1.0.1
 mlflow==1.22.0
 pylint==2.12.2
 anybadge
+pytest-celery
+pytest

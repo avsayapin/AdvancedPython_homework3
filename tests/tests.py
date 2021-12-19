@@ -1,12 +1,12 @@
-import unittest
-from app.api import app
+import pytest
+from worker.models import Models
 
 
-class TestAPP(unittest.TestCase):
-    def setUp(self):
-        self.client = app.test_client()
+@pytest.mark.celery(result_backend='redis://')
+def test_create_task(celery_app, celery_worker):
+    @celery_app.task
+    def classes():
+        models_dict = Models()
+        return {"classes": list(models_dict.classes.keys())}
+    assert classes.delay().get(timeout=10) == b'{"classes":["Linear regression","Gradient Boosting regression","Logistic regression","Gradient Boosting classifier"]}\n'
 
-    def TestClasses(self):
-        response = self.client.get("/classes")
-        self.assertIn(b'{"classes":["Linear regression","Gradient Boosting regression","Logistic regression","Gradient Boosting classifier"]}\n', response.data)
-        self.assertEqual(response.status_code, 200)
