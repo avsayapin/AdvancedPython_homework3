@@ -18,7 +18,7 @@ before_script:
   - docker-compose ps
 
 scripts:
-  - python -m unittest discover
+  - anybadge -l pylint -f pylint.svg 2=red 4=orange 8=yellow 10=green
 
 
 after_success:
