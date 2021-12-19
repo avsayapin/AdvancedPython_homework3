@@ -23,6 +23,7 @@ scripts:
 
 
 after_success:
+  - docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
   - docker tag advancedpython_homework3_app:latest spielmeister/advancedpython_hw3_api:new
   - docker tag advancedpython_homework3_worker:latest spielmeister/advancedpythonhw3_worker:new
   - docker push spielmeister/advancedpython_hw3_api:tagname
