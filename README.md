@@ -41,6 +41,10 @@ MLFlow is running on port 5050, you can access it with "http://localhost:5050/"
 <details><summary>3. CI</summary>
 <p>
 
+- Travis CI was used
+- Docker images are made during build using docker-compose and then pushed to DockerHub
+- You should specify DOCKER_USERNAME and DOCKER_PASSWORD for successful push
+- Badges: build badge from Travis
 </p>
 </details>
 <details><summary>4. Telegram app</summary>
