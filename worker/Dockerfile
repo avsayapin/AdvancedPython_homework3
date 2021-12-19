@@ -4,6 +4,8 @@ LABEL MAINTANER = "Artyom Sayapin <tema3544@yandex.ru>"
 
 ENV CELERY_BROKER redis://redis:6379/0
 ENV CELERY_BACKEND redis://redis:6379/0
+ENV MLFLOW_TRACKING_URI http://mlflow:5050
+
 
 COPY . /worker
 WORKDIR /worker

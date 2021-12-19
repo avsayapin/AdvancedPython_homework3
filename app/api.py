@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
 from prometheus_flask_exporter import PrometheusMetrics
 from celery import Celery
-from pymongo import MongoClient
 import os
 import logging
 
@@ -28,15 +27,6 @@ logger.info("Starting APi")
 app = Flask(__name__)
 metrics = PrometheusMetrics(app)
 metrics.info('app_info', 'Application info')
-
-client = MongoClient("mongodb", 27017)
-db = client["database"]
-collection = db['model_collection']
-
-
-@app.route('/')
-def hello_world():
-    return 'This is ML deploy app'
 
 
 @app.route('/classes', methods=["GET"])
@@ -94,8 +84,9 @@ def delete():
     :return: message that model has been deleted
     """
     name = request.args.get("name")
-    logger.debug(f'Deleting model with following parameters: Name:{name}')
-    task = celery.send_task("delete", args=[name])
+    version = request.args.get("version")
+    logger.debug(f'Deleting model with following parameters: Name:{name}, version: {version}')
+    task = celery.send_task("delete", args=[name, version])
     return task.id, 200
 
 
@@ -109,8 +100,27 @@ def train():
     """
     data = request.get_json()
     name = request.args.get("name")
+    version = request.args.get("version")
     logger.debug(f'Training model with following parameters: Name:{name}')
-    task = celery.send_task("train", args=[data, name])
+    task = celery.send_task("train", args=[data, name, version])
+    return task.id, 200
+
+
+@app.route('/test', methods=['GET'])
+@metrics.counter("Count_testing", "Testing requests by model",
+                 labels={'model': lambda: request.args.get('name', 'none')})
+def test():
+    """
+    Function gets data and model name from request,
+    then loads model and uses it for predictions
+    :return: predictions of the model in float type
+    """
+    data = request.get_json()
+    name = request.args.get("name")
+    version = request.args.get("version")
+    metric = request.args.get("metric")
+    logger.debug(f'Predicting with following parameters: Name:{name}, version: {version}, metric: {metric}')
+    task = celery.send_task("test", args=[data, name, version, metric])
     return task.id, 200
 
 
@@ -125,8 +135,9 @@ def predict():
     """
     data = request.get_json()
     name = request.args.get("name")
+    version = request.args.get("version")
     logger.debug(f'Predicting with following parameters: Name:{name}')
-    task = celery.send_task("predict", args=[data, name])
+    task = celery.send_task("predict", args=[data, name, version])
     return task.id, 200
 
 

@@ -1,5 +1,4 @@
 Flask~=2.0.2
 celery~=5.2.1
-pymongo~=4.0.1
 prometheus-flask-exporter
 redis

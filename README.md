@@ -25,7 +25,15 @@ Histogram type metrics added for classes and metrics requests.
 </details>
 <details><summary>2. MLFlow</summary>
 <p>
+Added MLFlow for model and metrics tracking, 
+quick setup was made with sqlite(as backend) and volume "models" as artifact store.
 
+MongoDB was deleted and celery tasks were changed to use MLFlow.
+
+Also added "/test" method for API that returns value for provided metric argument. 
+Supported metrics can be found in class Models.metrics from models.py.
+
+MLFlow is running on port 5050, you can access it with "http://localhost:5050/"
 </p>
 </details>
 <details><summary>3. CI</summary>

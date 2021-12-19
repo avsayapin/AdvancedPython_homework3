@@ -8,18 +8,10 @@ services:
     restart: always
     volumes:
       - logs:/logs
-    links:
-      - mongo
     ports:
       - "5000:5000"
     depends_on:
       - redis
-  mongo:
-    image: mongo
-    container_name: mongodb
-    restart: unless-stopped
-    environment:
-      MONGODB_DATA_DIR: ./models/db
   worker:
     build:
       context: ./worker
@@ -27,6 +19,7 @@ services:
     container_name: worker
     volumes:
       - logs:/logs
+      - models:/models
     depends_on:
       - redis
   redis:
@@ -37,6 +30,29 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana.ini:/etc/grafana/grafana.ini
+    links:
+      - prometheus
+  mlflow:
+    container_name: tracker_mlflow
+    restart: always
+    build:
+      context: ./mlflow
+      dockerfile: Dockerfile
+    ports:
+      - "5050:5050"
+    volumes:
+      - models:/models
+    links:
+      - worker
+    entrypoint: mlflow server --backend-store-uri sqlite:///:database --default-artifact-root /models/ -h 0.0.0.0 -p 5050
 volumes:
   logs:
+  models:
+
 
