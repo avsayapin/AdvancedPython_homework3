@@ -18,7 +18,7 @@ before_script:
   - docker-compose ps
 
 scripts:
-  - python -m unittest discover tests
+  - pytest tests/tests.py
 
 
 after_success:
