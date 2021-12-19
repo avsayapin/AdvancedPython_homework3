@@ -1,7 +1,5 @@
 Repository for the third homework of the Advanced Python course
 
-[![Build Status](https://app.travis-ci.com/avsayapin/AdvancedPython_homework3.svg?token=qxcp5FiEzzfpzyWqKeqT&branch=master)](https://app.travis-ci.com/avsayapin/AdvancedPython_homework3)
-
 Information about API from previous homework can be found in "API information" section. 
 Changes made to API reflected in the beginning of it.
 # HW3 Tasks
