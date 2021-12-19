@@ -3,22 +3,30 @@ os: linux
 language: python
 
 python:
-  - 3.6
   - 3.7
   - 3.8
   - 3.9
 
 install:
-  - pip install -r requirements.txt
+  - pip install -r requirements-dev.txt
 
 services:
   - docker
 
+before_script:
+  - docker-compose up -d
+  - docker-compose ps
 
 scripts:
   - python -m unittest discover
 
+
+after_success:
+  - docker tag advancedpython_homework3_app:latest spielmeister/advancedpython_hw3_api:new
+  - docker tag advancedpython_homework3_worker:latest spielmeister/advancedpythonhw3_worker:new
+  - docker push spielmeister/advancedpython_hw3_api:tagname
+  - docker push spielmeister/advancedpythonhw3_worker:tagname
+
 branches:
   only:
     - master
-    -
